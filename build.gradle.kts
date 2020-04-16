@@ -12,13 +12,37 @@ version = "0.0.1-SNAPSHOT"
 java.sourceCompatibility = JavaVersion.VERSION_11
 
 repositories {
+	jcenter()
 	mavenCentral()
 }
 
 dependencies {
+
+	//Spring
 	implementation("org.springframework.boot:spring-boot-starter")
+	implementation("org.springframework.boot:spring-boot-autoconfigure")
+	implementation("org.springframework.boot:spring-boot-starter-web")
+	implementation("org.springframework.data:spring-data-commons")
+	implementation("org.springframework.boot:spring-boot-starter-mail")
+	testImplementation("org.springframework.boot:spring-boot-starter-test")
+	compileOnly("org.springframework.boot:spring-boot-starter-tomcat")
+
+	//Kotlin
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+
+	//DB
+        // PostgreSQL
+        implementation("org.postgresql:postgresql:42.2.12")
+        //Exposed
+        implementation("org.jetbrains.exposed", "exposed-core", "0.23.1")
+        implementation("org.jetbrains.exposed", "exposed-dao", "0.23.1")
+        implementation("org.jetbrains.exposed", "exposed-jdbc", "0.23.1")
+
+	//Configuration
+	implementation ("com.natpryce", "konfig", "1.6.10.0")
+
+	//Test
 	testImplementation("org.springframework.boot:spring-boot-starter-test") {
 		exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
 	}
