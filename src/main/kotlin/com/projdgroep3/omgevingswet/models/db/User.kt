@@ -30,10 +30,31 @@ object useraddresses : Table() {
     override val primaryKey = PrimaryKey(userID, addressID, name = "PK_useraddresses_U_A")
 }
 
+data class UserOutput(
+        val id: Int,
+        val username: String,
+        val email: String,
+        val passwordHash: String,
+        val address: ArrayList<AddressCreateInput>
+)
+
+data class UserOutputNoAddress(
+        val username: String,
+        val email: String,
+        val passwordHash: String
+)
+
 data class UserCreateInput(
         val username: String,
         val email: String,
         val passwordHash: String,
         val address: AddressCreateInput
 )
+
+data class UserAddAddressInput(
+        val userID: Int,
+        val addressID: Int
+)
+
+
 

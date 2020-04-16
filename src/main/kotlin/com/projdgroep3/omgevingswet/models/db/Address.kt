@@ -1,5 +1,6 @@
 package com.projdgroep3.omgevingswet.models.db
 
+import UserOutputNoAddress
 import org.jetbrains.exposed.dao.IntEntity
 import org.jetbrains.exposed.dao.IntEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
@@ -20,7 +21,25 @@ class Address(id: EntityID<Int>) : IntEntity(id) {
     var housenumber by addresses.housenumber
     var housenumberaddition by addresses.housenumberaddition
     var postalcode by addresses.postalcode
+
+    fun toAddressCreateInput() = AddressCreateInput(
+            this.city,
+            this.street,
+            this.housenumber,
+            this.housenumberaddition,
+            this.postalcode
+    )
 }
+
+data class AddressOutput(
+        val id: Int,
+        val city: String,
+        val street: String,
+        val houseNumber: Int,
+        val houseNumberAddition: String?,
+        val postalCode: String,
+        val users: ArrayList<UserOutputNoAddress>
+)
 
 data class AddressCreateInput(
         val city: String,
