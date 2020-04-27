@@ -104,6 +104,7 @@ object AuthorizationActionType {
     enum class Create: IAuthorizationActionType {
         AUTH,
 
+        ADDRESS,
         //TODO(ADD CREATE ACTION TYPES)
         ;
 
@@ -113,6 +114,7 @@ object AuthorizationActionType {
     enum class Read: IAuthorizationActionType {
         AUTH,
 
+        ADDRESS,
         //TODO(ADD READ ACTION TYPES)
         ;
 
@@ -122,6 +124,7 @@ object AuthorizationActionType {
     enum class Update: IAuthorizationActionType {
         AUTH,
 
+        ADDRESS,
         //TODO(ADD UPDATE ACTION TYPES)
         ;
 
@@ -131,6 +134,7 @@ object AuthorizationActionType {
     enum class Delete: IAuthorizationActionType {
         AUTH,
 
+        ADDRESS,
         //TODO(ADD DELETE ACTION TYPES)
         ;
 

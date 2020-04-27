@@ -8,11 +8,9 @@ import com.projdgroep3.omgevingswet.logic.Database.getDatabase
 import com.projdgroep3.omgevingswet.models.db.Address
 import com.projdgroep3.omgevingswet.models.db.AddressCreateInput
 import com.projdgroep3.omgevingswet.models.db.addresses
-import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import users
-import java.lang.Exception
 
 object UserService : DatabaseService<UserOutput>() {
     override fun readAll(): List<UserOutput> {
@@ -45,6 +43,7 @@ object UserService : DatabaseService<UserOutput>() {
     }
 
     fun createUser(user: UserCreateInput): String {
+        //TODO(Convert return type to Message)
         var UserAlreadyExists: User? = null
         transaction(getDatabase()) {
             for (u in User.all()) {
@@ -58,7 +57,11 @@ object UserService : DatabaseService<UserOutput>() {
         if (UserAlreadyExists != null) {
             return "User already exists"
         } else {
-            var address: Address = AddressService.createAddress(user.address)
+            var address: Address = AddressService.createAddress(user.address).let {
+                transaction(getDatabase()) {
+                    Address.findById(it.targetId)
+                } ?: throw Exception("Something went wrong creating the address")
+            }
             var newUser = createUser(
                     user.username,
                     user.email,
@@ -71,13 +74,14 @@ object UserService : DatabaseService<UserOutput>() {
     }
 
     fun createUser(
+            //TODO(Convert return type to Message)
             Username: String,
             Email: String,
             PasswordHash: String,
             Address: Address,
             GlobalPermission: String
     ): User {
-        var User = transaction(getDatabase()) {
+        var user = transaction(getDatabase()) {
             User.new {
                 username = Username
                 email = Email
@@ -85,15 +89,15 @@ object UserService : DatabaseService<UserOutput>() {
                 globalpermission = GlobalPermission
             }
         }
-        transaction(getDatabase()) { User._address = SizedCollection(listOf(Address)) }
-        return User
+        transaction(getDatabase()) { user._address = SizedCollection(listOf(Address)) }
+        return user
     }
 
-    fun addAddress(input: UserAddAddressInput):String {
+    fun addAddress(input: UserAddAddressInput): String {
         transaction(getDatabase()) {
             useraddresses.insert {
-                var user:User? = User.findById(input.userID)
-                var address:Address? = Address.findById(input.addressID)
+                var user: User? = User.findById(input.userID)
+                var address: Address? = Address.findById(input.addressID)
 
                 if (user != null && address != null) {
                     it[userID] = user.id
