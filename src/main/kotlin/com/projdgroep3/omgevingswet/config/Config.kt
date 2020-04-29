@@ -22,6 +22,8 @@ val config = Config().getConfiguration()
 object server: PropertyGroup() {
     val baseUrl by stringType
 
+    val salt by stringType
+
     object db: PropertyGroup() {
         val host by stringType
         val port by intType

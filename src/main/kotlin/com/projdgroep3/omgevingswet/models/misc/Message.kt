@@ -12,7 +12,7 @@ data class Message(
 ){
     companion object {
         fun successful(userId: Int, authorizationType: AuthorizationType): Message =
-                Message(true, MessageType.NONE, authorizationType, null, userId, userId)
+                Message(true, MessageType.NONE, authorizationType, null, -1, userId)
 
         fun successfulEmpty(): Message = 
                 successful(-1, AuthorizationType.INFO)

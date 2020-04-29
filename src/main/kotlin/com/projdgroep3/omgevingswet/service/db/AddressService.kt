@@ -8,6 +8,7 @@ import com.projdgroep3.omgevingswet.models.db.AddressCreateInput
 import com.projdgroep3.omgevingswet.models.db.AddressOutput
 import com.projdgroep3.omgevingswet.models.db.addresses
 import com.projdgroep3.omgevingswet.models.misc.Message
+import com.projdgroep3.omgevingswet.models.misc.MessageType
 import com.projdgroep3.omgevingswet.utils.MessageUtils
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
@@ -59,7 +60,13 @@ object AddressService : DatabaseService<AddressOutput>() {
         }
 
         return if (addressAlreadyExists != null) {
-            Message.successful(-1, AuthorizationType.CREATE)
+            Message(
+                    true,
+                    MessageType.INFO,
+                    AuthorizationType.CREATE,
+                    "Address already exists",
+                    addressAlreadyExists!!.id.value,
+                    -1)
         } else {
             createAddress(
                     address.city,
@@ -86,7 +93,9 @@ object AddressService : DatabaseService<AddressOutput>() {
                 after = listOf { _ ->
                     MessageUtils.execute(
                             targetId = transaction(getDatabase()) {
-                                Address.all().sortedByDescending { it.id }[0].id.value + 1 },
+                                val addresses = Address.all().sortedByDescending { it.id }
+                                if (addresses.isEmpty()) 1 else addresses.first().id.value + 1
+                            },
                             userId = -1,
                             authType = AuthorizationType.CREATE) {
                         transaction(getDatabase()) {
@@ -95,9 +104,7 @@ object AddressService : DatabaseService<AddressOutput>() {
                                 street = Street
                                 housenumber = HouseNumber
                                 postalcode = PostalCode
-                                if (HouseNumberAddition != null) {
-                                    housenumberaddition = HouseNumberAddition
-                                }
+                                housenumberaddition = HouseNumberAddition ?: ""
                             }
                         }
                     }

@@ -21,6 +21,8 @@ dependencies {
 	//Spring
 	implementation("org.springframework.boot:spring-boot-starter")
 	implementation("org.springframework.boot:spring-boot-autoconfigure")
+	implementation("org.springframework.security:spring-security-core")
+	implementation("org.springframework.security:spring-security-web")
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("org.springframework.data:spring-data-commons")
 	implementation("org.springframework.boot:spring-boot-starter-mail")
@@ -38,6 +40,9 @@ dependencies {
         implementation("org.jetbrains.exposed", "exposed-core", "0.23.1")
         implementation("org.jetbrains.exposed", "exposed-dao", "0.23.1")
         implementation("org.jetbrains.exposed", "exposed-jdbc", "0.23.1")
+
+	//Crypto
+	implementation("commons-codec:commons-codec:1.12")
 
 	//Configuration
 	implementation ("com.natpryce", "konfig", "1.6.10.0")

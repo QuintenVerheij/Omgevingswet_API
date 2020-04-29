@@ -10,7 +10,8 @@ import org.jetbrains.exposed.sql.Table
 object users : IntIdTable() {
     val username = varchar("username", 50)
     val email = varchar("email", 50)
-    val passwordhash = varchar("passwordhash", 50)
+    val passwordhash = varchar("passwordhash", 512)
+    val cryptosalt = varchar("cryptosalt", 128)
     val globalpermission = varchar("globalpermission", 10)
 }
 
@@ -20,6 +21,7 @@ class User(id: EntityID<Int>) : IntEntity(id) {
     var username by users.username
     var email by users.email
     var passwordhash by users.passwordhash
+    var cryptosalt by users.cryptosalt
     var globalpermission by users.globalpermission
     var _address by Address via useraddresses
 }

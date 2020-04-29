@@ -5,7 +5,6 @@ enum class MessageType {
     INFO,
     EXCEPTION,
 
-    USERNAME_ALREADY_EXISTS,
     MAIL_ALREADY_USED,
 
     LOGIN,
