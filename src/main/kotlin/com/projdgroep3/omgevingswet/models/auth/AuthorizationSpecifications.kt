@@ -14,7 +14,7 @@ enum class AuthorizationRole(
 
 ): Identifiable {
     USER(
-            "",
+            "user",
             true,
             listOf(
                 //TODO(Implement info permissions)
@@ -37,7 +37,7 @@ enum class AuthorizationRole(
     },
 
     PRIVATE_USER(
-            "",
+            "private_user",
             false,
             listOf(
                     //TODO(Implement info permissions)
@@ -57,9 +57,22 @@ enum class AuthorizationRole(
     ) {
         override fun getIdentifier(): String = id
     },
+    AUTH_READ(
+            "auth_read",
+            true,
+            emptyList(),
+            emptyList(),
+            listOf(
+                    AuthorizationActionType.Read.AUTH
+            ),
+            emptyList(),
+            emptyList()
+    ) {
+        override fun getIdentifier(): String = id
+    },
 
     ADMIN(
-            "",
+            "admin",
             false,
             AuthorizationActionType.Info.values().toList(),
             AuthorizationActionType.Create.values().toList(),

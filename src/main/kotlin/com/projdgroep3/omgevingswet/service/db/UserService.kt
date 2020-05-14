@@ -5,7 +5,7 @@ import UserAddAddressInput
 import UserCreateInput
 import UserOutput
 import com.projdgroep3.omgevingswet.logic.Database.getDatabase
-import com.projdgroep3.omgevingswet.models.auth.AuthorizationRequest
+import com.projdgroep3.omgevingswet.models.auth.AuthorizationTokenRequest
 import com.projdgroep3.omgevingswet.models.auth.AuthorizationType
 import com.projdgroep3.omgevingswet.models.db.Address
 import com.projdgroep3.omgevingswet.models.db.AddressCreateInput
@@ -151,20 +151,20 @@ object UserService : DatabaseService<UserOutput>() {
             )
         } else
             Message(
-                true,
-                MessageType.INFO,
-                AuthorizationType.UPDATE,
-                "Succesfully added address",
-                input.userID,
-                -1)
+                    true,
+                    MessageType.INFO,
+                    AuthorizationType.UPDATE,
+                    "Succesfully added address",
+                    input.userID,
+                    -1)
     }
 
     /*
     Read user login
      */
     fun readUserLogin(
-            request: AuthorizationRequest
-    ): Boolean = readUserLogin(
+            request: AuthorizationTokenRequest
+    ): Pair<Int, Message> = readUserLogin(
             request.mail,
             request.password
     )
@@ -172,10 +172,30 @@ object UserService : DatabaseService<UserOutput>() {
     private fun readUserLogin(
             mail: String,
             password: String
-    ): Boolean {
+    ): Pair<Int, Message> {
         val user = transaction(getDatabase()) {
-            User.find { users.email eq mail }.first()
+            val users = User.find { users.email eq mail }
+            if (users.empty()) null else users.first()
         }
-        return user.passwordhash == EncryptionUtils.hashWithCryptoSaltAndServerSalt(password, user.cryptosalt)
+        //Return failed message if email is not present
+                ?: return -1 to Message(
+                        false,
+                        MessageType.INVALID_CREDENTIALS,
+                        AuthorizationType.READ,
+                        "Incorrect email address",
+                        -1,
+                        -1)
+        return if (user.passwordhash == EncryptionUtils.hashWithCryptoSaltAndServerSalt(password, user.cryptosalt))
+            user.id.value to Message.successful(
+                    user.id.value,
+                    AuthorizationType.READ)
+        else
+            user.id.value to Message(
+                    false,
+                    MessageType.INVALID_LOGIN_ATTEMPT,
+                    AuthorizationType.READ,
+                    "Incorrect password for email address",
+                    user.id.value,
+                    user.id.value)
     }
 }

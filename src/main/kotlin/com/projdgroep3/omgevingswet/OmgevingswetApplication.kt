@@ -6,11 +6,13 @@ import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
+import org.springframework.context.annotation.Bean
 import useraddresses
 import users
 
 @SpringBootApplication
 class OmgevingswetApplication
+
 
 fun main(args: Array<String>) {
 	runApplication<OmgevingswetApplication>(*args)
