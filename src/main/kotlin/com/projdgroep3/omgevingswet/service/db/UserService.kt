@@ -83,7 +83,7 @@ object UserService : DatabaseService<UserOutput>() {
             return createUser(
                     user.username,
                     user.email,
-                    user.passwordHash,
+                    user.password,
                     address,
                     "user"
             )

@@ -49,7 +49,7 @@ data class UserOutputNoAddress(
 data class UserCreateInput(
         val username: String,
         val email: String,
-        val passwordHash: String,
+        val password: String,
         val address: AddressCreateInput
 )
 
