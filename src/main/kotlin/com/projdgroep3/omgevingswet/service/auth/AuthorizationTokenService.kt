@@ -19,9 +19,9 @@ object AuthorizationTokenService {
     init {
         // Initialize public auth roles
         AuthorizationRole.values().filter { it.isPublic }.forEach { role ->
-            val mail = role.id
+            val id = role.identifier
             val infiniteToken = requestInfiniteToken(
-                    AuthorizationTokenRequest(mail, ""),
+                    AuthorizationTokenRequest(id, ""),
                     role
             )
             internalToken[role] = AuthorizationToken(requireNotNull(infiniteToken.token))

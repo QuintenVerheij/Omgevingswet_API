@@ -5,56 +5,40 @@ import UserAddAddressInput
 import UserCreateInput
 import UserOutput
 import com.projdgroep3.omgevingswet.logic.Database.getDatabase
-import com.projdgroep3.omgevingswet.models.auth.AuthorizationTokenRequest
-import com.projdgroep3.omgevingswet.models.auth.AuthorizationType
+import com.projdgroep3.omgevingswet.models.auth.*
 import com.projdgroep3.omgevingswet.models.db.Address
 import com.projdgroep3.omgevingswet.models.db.AddressCreateInput
 import com.projdgroep3.omgevingswet.models.db.addresses
 import com.projdgroep3.omgevingswet.models.misc.Message
 import com.projdgroep3.omgevingswet.models.misc.MessageType
+import com.projdgroep3.omgevingswet.models.misc.MessageWithItem
+import com.projdgroep3.omgevingswet.service.auth.AuthorizationService
 import com.projdgroep3.omgevingswet.utils.EncryptionUtils
 import com.projdgroep3.omgevingswet.utils.MessageUtils
-import org.jetbrains.exposed.sql.SizedCollection
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.select
-import org.jetbrains.exposed.sql.selectAll
+import com.projdgroep3.omgevingswet.utils.UUIDUtils
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import useraddresses
+import useraddresses.addressID
+import useraddresses.userID
 import users
+import kotlin.and
 
 
 object UserService : DatabaseService<UserOutput>() {
+    //CREATE
+    fun createUser(input: AuthorizedAction<UserCreateInput>): Message = createUser(
+            input.auth,
+            input.input
+    )
 
-    override fun readAll(): List<UserOutput> {
-        var u = ArrayList<UserOutput>()
-        transaction(getDatabase()) {
-            users.selectAll().forEach {
-                var a = ArrayList<AddressCreateInput>()
-                useraddresses.select { useraddresses.userID eq it[users.id].value }.forEach {
-                    addresses.select { addresses.id eq it[useraddresses.addressID].value }.forEach {
-                        a.add(AddressCreateInput(
-                                it[addresses.city],
-                                it[addresses.street],
-                                it[addresses.housenumber],
-                                it[addresses.housenumberaddition],
-                                it[addresses.postalcode]
-                        ))
-                    }
-                }
-                u.add(UserOutput(
-                        User[it[users.id]].id.value,
-                        it[users.username],
-                        it[users.email],
-                        it[users.passwordhash],
-                        a
-                ))
-            }
+    private fun createUser(token: AuthorizationToken, input: UserCreateInput): Message {
+        return AuthorizationService.executeCreate(-1, token, AuthorizationActionType.Create.USER) {
+            createUser(input)
         }
-
-        return u.toList()
     }
 
-    fun createUser(user: UserCreateInput): Message {
+    private fun createUser(user: UserCreateInput): Message {
         //TODO(Wrap with authorization)
         var UserAlreadyExists: User? = null
         transaction(getDatabase()) {
@@ -73,7 +57,7 @@ object UserService : DatabaseService<UserOutput>() {
                     AuthorizationType.CREATE,
                     "User already exists",
                     UserAlreadyExists!!.id.value,
-                    -1)
+                    UserAlreadyExists!!.id.value)
         } else {
             var address: Address = AddressService.createAddress(user.address).let {
                 transaction(getDatabase()) {
@@ -125,38 +109,140 @@ object UserService : DatabaseService<UserOutput>() {
         )
     }
 
-    fun addAddress(input: UserAddAddressInput): Message {
-        var success = true;
-        transaction(getDatabase()) {
-            useraddresses.insert {
-                var user: User? = User.findById(input.userID)
-                var address: Address? = Address.findById(input.addressID)
+    fun addAddress(input: AuthorizedAction<UserAddAddressInput>) = AuthorizationService.executeUpdateUser(
+            input.input.userID,
+            input.auth,
+            AuthorizationActionType.Update.ADDRESS
+    ) { user -> addAddress(user, input.input) }
 
-                if (user != null && address != null) {
-                    it[userID] = user.id
-                    it[addressID] = address.id
+    private fun addAddress(authUser: AuthorizedUser, input: UserAddAddressInput): Message {
+        var success = true;
+        var present = false;
+        transaction(getDatabase()) {
+            var user: User? = User.findById(input.userID)
+            var address: Address? = Address.findById(input.addressID)
+            if (user != null && address != null) {
+                if (!useraddresses.select { (userID eq user.id) and (addressID eq address.id) }.empty()) {
+                    present = true;
                 } else {
-                    success = false
+                    useraddresses.insert {
+                        it[userID] = user.id
+                        it[addressID] = address.id
+                    }
                 }
+            } else {
+                success = false
             }
         }
-        return if (!success) {
+        return if (present) {
             Message(
-                    false,
-                    MessageType.EXCEPTION,
-                    AuthorizationType.UPDATE,
-                    "Something went wrong adding the address",
-                    input.userID,
-                    -1
+                    successful = true,
+                    messageType = MessageType.INFO,
+                    authorizationType = AuthorizationType.UPDATE,
+                    message = "Address already coupled to user",
+                    targetId = input.userID,
+                    userId = authUser.userId
             )
-        } else
-            Message(
-                    true,
-                    MessageType.INFO,
-                    AuthorizationType.UPDATE,
-                    "Succesfully added address",
-                    input.userID,
-                    -1)
+        } else {
+            return if (!success) {
+                Message(
+                        false,
+                        MessageType.EXCEPTION,
+                        AuthorizationType.UPDATE,
+                        "Something went wrong adding the address",
+                        input.userID,
+                        authUser.userId
+                )
+            } else
+                Message(
+                        true,
+                        MessageType.INFO,
+                        AuthorizationType.UPDATE,
+                        "Succesfully added address",
+                        input.userID,
+                        authUser.userId)
+        }
+    }
+
+    //READ
+    override fun readAll(): List<UserOutput> {
+        var u = ArrayList<UserOutput>()
+        transaction(getDatabase()) {
+            users.selectAll().forEach {
+                var a = ArrayList<AddressCreateInput>()
+                useraddresses.select { useraddresses.userID eq it[users.id].value }.forEach {
+                    addresses.select { addresses.id eq it[useraddresses.addressID].value }.forEach {
+                        a.add(AddressCreateInput(
+                                it[addresses.city],
+                                it[addresses.street],
+                                it[addresses.housenumber],
+                                it[addresses.housenumberaddition],
+                                it[addresses.postalcode]
+                        ))
+                    }
+                }
+                u.add(UserOutput(
+                        User[it[users.id]].id.value,
+                        it[users.username],
+                        it[users.email],
+                        a
+                ))
+            }
+        }
+
+        return u.toList()
+    }
+
+    fun readUser(
+            input: AuthorizedAction<Int>
+    ): MessageWithItem<UserOutput> = readUser(
+            input.auth,
+            input.input
+    )
+
+    fun readUser(
+            token: AuthorizationToken,
+            id: Int
+    ): MessageWithItem<UserOutput> = AuthorizationService.executeReadOneUser(id, token, AuthorizationActionType.Read.USER, {
+        var u = ArrayList<UserOutput>()
+        var a = ArrayList<AddressCreateInput>()
+        transaction(getDatabase()) {
+            users.select { users.id eq id }.forEach {
+                useraddresses.select { useraddresses.userID eq it[users.id].value }.forEach {
+                    addresses.select { addresses.id eq it[useraddresses.addressID].value }.forEach {
+                        a.add(AddressCreateInput(
+                                it[addresses.city],
+                                it[addresses.street],
+                                it[addresses.housenumber],
+                                it[addresses.housenumberaddition],
+                                it[addresses.postalcode]
+                        ))
+                    }
+                }
+                u.add(UserOutput(
+                        User[it[users.id]].id.value,
+                        it[users.username],
+                        it[users.email],
+                        a
+                ))
+            }
+        }
+        u.first()
+    }) { it as UserOutput }
+
+    fun readUserRole(id: Int): AuthorizationRole? {
+        var role: String? = null
+        transaction(getDatabase()) {
+            users.select { users.id eq id }.forEach {
+                role = it[users.globalpermission]
+            }
+        }
+        AuthorizationRole.values().forEach {
+            if (role.equals(it.identifier)) {
+                return it;
+            }
+        }
+        return null;
     }
 
     /*

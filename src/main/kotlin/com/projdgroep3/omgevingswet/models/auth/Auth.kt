@@ -4,7 +4,7 @@ data class Auth (
         val userId: Int,
         val roleId: String
 ) {
-    fun convert(): AuthorizationRole = requireNotNull(AuthorizationRole.values().find {it.id == roleId})
+    fun convert(): AuthorizationRole = requireNotNull(AuthorizationRole.values().find {it.identifier == roleId})
 }
 
 data class AuthRoleSpecification(

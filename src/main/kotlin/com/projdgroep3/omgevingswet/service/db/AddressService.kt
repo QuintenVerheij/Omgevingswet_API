@@ -26,8 +26,7 @@ object AddressService : DatabaseService<AddressOutput>() {
                     users.select { users.id eq it[useraddresses.userID].value }.forEach {
                         u.add(UserOutputNoAddress(
                                 it[users.username],
-                                it[users.email],
-                                it[users.passwordhash]
+                                it[users.email]
                         ))
                     }
                 }

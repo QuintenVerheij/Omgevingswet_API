@@ -1,6 +1,7 @@
 import com.projdgroep3.omgevingswet.models.db.Address
 import com.projdgroep3.omgevingswet.models.db.AddressCreateInput
 import com.projdgroep3.omgevingswet.models.db.addresses
+import com.projdgroep3.omgevingswet.service.Identifiable
 import org.jetbrains.exposed.dao.IntEntity
 import org.jetbrains.exposed.dao.IntEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
@@ -32,18 +33,25 @@ object useraddresses : Table() {
     override val primaryKey = PrimaryKey(userID, addressID, name = "PK_useraddresses_U_A")
 }
 
+object models: Table() {
+    val UserID = reference("UserID", users)
+    val model = blob("model")
+}
+
+
+
 data class UserOutput(
         val id: Int,
         val username: String,
         val email: String,
-        val passwordHash: String,
         val address: ArrayList<AddressCreateInput>
-)
+): Identifiable{
+    override fun getIdentifier():Int = id
+}
 
 data class UserOutputNoAddress(
         val username: String,
-        val email: String,
-        val passwordHash: String
+        val email: String
 )
 
 data class UserCreateInput(

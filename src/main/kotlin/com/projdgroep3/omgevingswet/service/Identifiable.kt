@@ -4,5 +4,5 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 
 interface Identifiable {
     @JsonIgnore
-    fun getIdentifier(): String
+    fun getIdentifier(): Int
 }

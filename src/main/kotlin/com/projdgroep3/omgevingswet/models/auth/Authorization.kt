@@ -28,6 +28,11 @@ data class AuthorizationWhoAmIResult(
         val expireTime: Long
 )
 
+data class AuthorizedAction<T>(
+        val auth: AuthorizationToken,
+        val input: T
+)
+
 data class AuthorizedUserLogout(
         val user: AuthorizedUser?,
         val logout: Boolean
