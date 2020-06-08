@@ -32,4 +32,8 @@ object server: PropertyGroup() {
         val pwd by stringType
         val ssl by booleanType
     }
+
+    object files: PropertyGroup() {
+        val imgdir by stringType
+    }
 }

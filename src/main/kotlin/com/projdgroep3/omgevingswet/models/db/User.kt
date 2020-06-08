@@ -49,6 +49,13 @@ data class UserOutput(
     override fun getIdentifier():Int = id
 }
 
+data class UserOutputPublic(
+        val id: Int,
+        val username: String
+)//: Identifiable {
+//    override fun getIdentifier(): Int = id
+//}
+
 data class UserOutputNoAddress(
         val username: String,
         val email: String

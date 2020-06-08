@@ -4,6 +4,9 @@ import User
 import UserAddAddressInput
 import UserCreateInput
 import UserOutput
+import UserOutputPublic
+import com.projdgroep3.omgevingswet.config.config
+import com.projdgroep3.omgevingswet.config.server
 import com.projdgroep3.omgevingswet.logic.Database.getDatabase
 import com.projdgroep3.omgevingswet.models.auth.*
 import com.projdgroep3.omgevingswet.models.db.Address
@@ -15,17 +18,26 @@ import com.projdgroep3.omgevingswet.models.misc.MessageWithItem
 import com.projdgroep3.omgevingswet.service.auth.AuthorizationService
 import com.projdgroep3.omgevingswet.utils.EncryptionUtils
 import com.projdgroep3.omgevingswet.utils.MessageUtils
-import com.projdgroep3.omgevingswet.utils.UUIDUtils
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.core.io.ClassPathResource
+import org.springframework.util.StreamUtils
+import org.springframework.web.multipart.MultipartFile
 import useraddresses
 import useraddresses.addressID
 import useraddresses.userID
 import users
-import kotlin.and
+import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
+import javax.servlet.ServletContext
 
 
 object UserService : DatabaseService<UserOutput>() {
+    @Autowired
+    lateinit var context: ServletContext
     //CREATE
     fun createUser(input: AuthorizedAction<UserCreateInput>): Message = createUser(
             input.auth,
@@ -229,6 +241,57 @@ object UserService : DatabaseService<UserOutput>() {
         }
         u.first()
     }) { it as UserOutput }
+
+    fun readOtherUser(id: Int): MessageWithItem<UserOutputPublic> {
+        var u = ArrayList<UserOutputPublic>()
+        var a = ArrayList<AddressCreateInput>()
+        transaction(getDatabase()) {
+            users.select { users.id eq id }.forEach {
+                u.add(UserOutputPublic(
+                        User[it[users.id]].id.value,
+                        it[users.username]
+                ))
+            }
+        }
+        return MessageWithItem(Message(
+                successful = true,
+                messageType = MessageType.INFO,
+                authorizationType = AuthorizationType.READ,
+                message = null,
+                targetId = id,
+                userId = -1
+        ), u.first())
+    }
+
+    fun storeImage(input: AuthorizedAction<Int>, file: MultipartFile): Message = AuthorizationService.executeUpdateUser(
+            userId = input.input,
+            token = input.auth,
+            actionType = AuthorizationActionType.Update.USER
+    ) {
+        try {
+            val directoryName = Paths.get(config[server.files.imgdir] + "\\" + it.userId.toString())
+            //context.getRealPath("/") + config[server.files.imgdir] + "\\" + it.userId.toString())
+            if (!Files.exists(directoryName)) {
+                Files.createDirectories(directoryName)
+            }
+            val bytes = file.bytes
+            val path: Path = Paths.get(directoryName.toString() + "\\" + it.userId.toString() + ".jpg")
+            Files.write(path, bytes)
+
+        } catch (e: IOException){
+            println(e.stackTrace)
+        }
+        Message.successfulEmpty()
+    }
+
+    fun serveImage(userId: Int) : ByteArray {
+
+        val Path = Paths.get(config[server.files.imgdir] + "\\" + userId.toString() + "\\" + userId.toString() + ".jpg")
+        //context.getRealPath("") + config[server.files.imgdir] + "\\" + userId.toString() + "\\" + userId.toString() + ".jpg")
+        val stream = Files.newInputStream(Path)
+        return StreamUtils.copyToByteArray(stream)
+    }
+
 
     fun readUserRole(id: Int): AuthorizationRole? {
         var role: String? = null
