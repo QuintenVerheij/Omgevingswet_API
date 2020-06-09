@@ -16,12 +16,12 @@ import com.projdgroep3.omgevingswet.models.misc.Message
 import com.projdgroep3.omgevingswet.models.misc.MessageType
 import com.projdgroep3.omgevingswet.models.misc.MessageWithItem
 import com.projdgroep3.omgevingswet.service.auth.AuthorizationService
+import com.projdgroep3.omgevingswet.service.auth.AuthorizationTokenService
 import com.projdgroep3.omgevingswet.utils.EncryptionUtils
 import com.projdgroep3.omgevingswet.utils.MessageUtils
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.core.io.ClassPathResource
 import org.springframework.util.StreamUtils
 import org.springframework.web.multipart.MultipartFile
 import useraddresses
@@ -244,7 +244,6 @@ object UserService : DatabaseService<UserOutput>() {
 
     fun readOtherUser(id: Int): MessageWithItem<UserOutputPublic> {
         var u = ArrayList<UserOutputPublic>()
-        var a = ArrayList<AddressCreateInput>()
         transaction(getDatabase()) {
             users.select { users.id eq id }.forEach {
                 u.add(UserOutputPublic(
@@ -263,12 +262,35 @@ object UserService : DatabaseService<UserOutput>() {
         ), u.first())
     }
 
+    private fun getFileExtension(filename: String): String {
+        var extension = ""
+        val i = filename.lastIndexOf('.')
+        val p = Math.max(filename.lastIndexOf('/'), filename.lastIndexOf('\\'))
+        if(i > p){
+            extension = filename.substring(i+1)
+        }
+        return extension;
+    }
+
     fun storeImage(input: AuthorizedAction<Int>, file: MultipartFile): Message = AuthorizationService.executeUpdateUser(
             userId = input.input,
             token = input.auth,
             actionType = AuthorizationActionType.Update.USER
     ) {
         try {
+            if(file.originalFilename != null) {
+                val ext = getFileExtension(file.originalFilename!!)
+                if(!(ext == "jpg" || ext == "png")){
+                    return@executeUpdateUser Message(
+                            successful = false,
+                            messageType = MessageType.INVALID_FILE_FORMAT,
+                            authorizationType = AuthorizationType.UPDATE,
+                            message = "Image must be .jpg or .png",
+                            targetId = input.input,
+                            userId = AuthorizationTokenService.verifyToken(input.auth, logout = false).user?.userId ?: -1
+                    )
+                }
+            }
             val directoryName = Paths.get(config[server.files.imgdir] + "\\" + it.userId.toString())
             //context.getRealPath("/") + config[server.files.imgdir] + "\\" + it.userId.toString())
             if (!Files.exists(directoryName)) {
@@ -280,16 +302,31 @@ object UserService : DatabaseService<UserOutput>() {
 
         } catch (e: IOException){
             println(e.stackTrace)
+            return@executeUpdateUser Message(
+                    successful = false,
+                    messageType = MessageType.EXCEPTION,
+                    authorizationType = AuthorizationType.UPDATE,
+                    message = "Internal server error occurred storing file",
+                    targetId = input.input,
+                    userId =  AuthorizationTokenService.verifyToken(input.auth, logout = false).user?.userId ?: -1
+            )
         }
-        Message.successfulEmpty()
+        Message.successful(
+                AuthorizationTokenService.verifyToken(input.auth, logout = false).user?.userId ?: -1,
+                AuthorizationType.UPDATE
+        )
     }
 
     fun serveImage(userId: Int) : ByteArray {
 
-        val Path = Paths.get(config[server.files.imgdir] + "\\" + userId.toString() + "\\" + userId.toString() + ".jpg")
+        val path = Paths.get(config[server.files.imgdir] + "\\" + userId.toString() + "\\" + userId.toString() + ".jpg")
         //context.getRealPath("") + config[server.files.imgdir] + "\\" + userId.toString() + "\\" + userId.toString() + ".jpg")
-        val stream = Files.newInputStream(Path)
-        return StreamUtils.copyToByteArray(stream)
+        return if(!Files.exists(path)){
+            ByteArray(0)
+        }else {
+            val stream = Files.newInputStream(path)
+            StreamUtils.copyToByteArray(stream)
+        }
     }
 
 

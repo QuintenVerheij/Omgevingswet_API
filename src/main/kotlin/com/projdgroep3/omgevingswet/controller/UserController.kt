@@ -16,6 +16,7 @@ import com.projdgroep3.omgevingswet.service.auth.AuthorizationTokenService
 import com.projdgroep3.omgevingswet.service.db.UserService
 import com.projdgroep3.omgevingswet.utils.toResponseEntity
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -70,17 +71,17 @@ class UserController {
 
     @RequestMapping("/img/{id}", method = [RequestMethod.GET], produces = arrayOf(
             MediaType.IMAGE_PNG_VALUE, MediaType.IMAGE_JPEG_VALUE))
-    fun getimg(@PathVariable id: String): ResponseEntity<ByteArray>{
+    fun getImage(@PathVariable id: String): ResponseEntity<ByteArray>{
         try{
             id.toInt()
         }catch (e: NumberFormatException){
-
+            return ByteArray(0).toResponseEntity()
         }
         return UserService.serveImage(id.toInt()).toResponseEntity()
     }
 
     @RequestMapping("/img/upload", method = [RequestMethod.POST])
-    fun setimg(@RequestParam auth: AuthorizationToken, @RequestParam input: Int, @RequestParam file: MultipartFile): ResponseEntity<Message>{
+    fun setImage(@RequestParam auth: AuthorizationToken, @RequestParam input: Int, @RequestParam file: MultipartFile): ResponseEntity<Message>{
         if(file.isEmpty){
             return Message(
                     successful = false,

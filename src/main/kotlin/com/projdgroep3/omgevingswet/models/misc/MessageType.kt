@@ -15,5 +15,7 @@ enum class MessageType {
     INVALID_CREDENTIALS,
     NOT_AUTHORIZED,
     INVALID_TOKEN,
+
+    INVALID_FILE_FORMAT
 }
 
