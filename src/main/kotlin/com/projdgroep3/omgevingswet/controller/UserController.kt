@@ -15,6 +15,8 @@ import com.projdgroep3.omgevingswet.models.misc.MessageWithItem
 import com.projdgroep3.omgevingswet.service.auth.AuthorizationTokenService
 import com.projdgroep3.omgevingswet.service.db.UserService
 import com.projdgroep3.omgevingswet.utils.toResponseEntity
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -27,11 +29,13 @@ import javax.servlet.ServletContext
 @CrossOrigin
 @RestController
 @RequestMapping("/user")
+@Api(tags = ["User"], description = "CRUD for users")
 class UserController {
     /*
     Create
      */
     @RequestMapping("/create", method = [RequestMethod.POST])
+    @ApiOperation("Create new user")
     fun createUser(
             @RequestBody user: UserCreateInput): ResponseEntity<Message> = UserService.createUser(
             AuthorizedAction<UserCreateInput>(
@@ -40,6 +44,7 @@ class UserController {
             )).toResponseEntity()
 
     @RequestMapping("/create/address", method = [RequestMethod.PUT])
+    @ApiOperation("Associate address with user")
     fun addAddress(
             @RequestBody input: AuthorizedAction<UserAddAddressInput>): ResponseEntity<Message> = UserService.addAddress(input).toResponseEntity()
 
@@ -48,9 +53,11 @@ class UserController {
 //    fun readUser(): ResponseEntity<List<UserOutput>> = UserService.readAll().toResponseEntity()
 
     @RequestMapping("/read", method = [RequestMethod.POST])
+    @ApiOperation("Read user by id")
     fun readUser(@RequestBody input: AuthorizedAction<Int>): ResponseEntity<MessageWithItem<UserOutput>> = UserService.readUser(input).toResponseEntity()
 
     @RequestMapping("/other/read/{id}", method = [RequestMethod.GET])
+    @ApiOperation("Read public info of user by id")
     fun readUser(@PathVariable id: String): ResponseEntity<MessageWithItem<UserOutputPublic>> {
         try{
             id.toInt()
@@ -71,6 +78,7 @@ class UserController {
 
     @RequestMapping("/img/{id}", method = [RequestMethod.GET], produces = arrayOf(
             MediaType.IMAGE_PNG_VALUE, MediaType.IMAGE_JPEG_VALUE))
+    @ApiOperation("Read profile image of user by id")
     fun getImage(@PathVariable id: String): ResponseEntity<ByteArray>{
         try{
             id.toInt()
@@ -81,6 +89,7 @@ class UserController {
     }
 
     @RequestMapping("/img/upload", method = [RequestMethod.POST])
+    @ApiOperation("Upload profile image and associate with user by id")
     fun setImage(@RequestParam auth: AuthorizationToken, @RequestParam input: Int, @RequestParam file: MultipartFile): ResponseEntity<Message>{
         if(file.isEmpty){
             return Message(

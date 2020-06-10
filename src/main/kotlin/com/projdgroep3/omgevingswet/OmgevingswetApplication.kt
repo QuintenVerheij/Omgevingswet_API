@@ -1,5 +1,7 @@
 package com.projdgroep3.omgevingswet
 
+import com.projdgroep3.omgevingswet.config.config
+import com.projdgroep3.omgevingswet.config.server
 import com.projdgroep3.omgevingswet.logic.Database.getDatabase
 import com.projdgroep3.omgevingswet.models.db.addresses
 import org.jetbrains.exposed.sql.SchemaUtils
@@ -25,7 +27,7 @@ class OmgevingswetApplication
 		runApplication<OmgevingswetApplication>(*args)
 
 		transaction(getDatabase()) { SchemaUtils.create(users, addresses, useraddresses) }
-		browse("http://localhost:8080/swagger-ui.html")
+		browse(config[server.baseUrl] + "/swagger-ui.html")
 	}
 
 	fun browse(url: String) {
