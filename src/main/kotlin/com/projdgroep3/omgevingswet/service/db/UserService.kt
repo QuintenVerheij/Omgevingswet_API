@@ -368,7 +368,7 @@ object UserService : DatabaseService<UserOutput>() {
                         false,
                         MessageType.INVALID_CREDENTIALS,
                         AuthorizationType.READ,
-                        "Incorrect email address",
+                        "Incorrect email and password combination",
                         -1,
                         -1)
         return if (user.passwordhash == EncryptionUtils.hashWithCryptoSaltAndServerSalt(password, user.cryptosalt))
@@ -380,7 +380,7 @@ object UserService : DatabaseService<UserOutput>() {
                     false,
                     MessageType.INVALID_LOGIN_ATTEMPT,
                     AuthorizationType.READ,
-                    "Incorrect password for email address",
+                    "Incorrect email and password combination",
                     user.id.value,
                     user.id.value)
     }

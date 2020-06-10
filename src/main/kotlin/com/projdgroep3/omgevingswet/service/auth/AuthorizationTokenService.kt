@@ -3,6 +3,7 @@ package com.projdgroep3.omgevingswet.service.auth
 import com.projdgroep3.omgevingswet.models.auth.*
 import com.projdgroep3.omgevingswet.models.misc.Message
 import com.projdgroep3.omgevingswet.models.misc.MessageType
+import com.projdgroep3.omgevingswet.models.misc.MessageWithItem
 import com.projdgroep3.omgevingswet.service.db.UserService
 import com.projdgroep3.omgevingswet.utils.EncryptionUtils
 import com.projdgroep3.omgevingswet.utils.UUIDUtils
@@ -112,15 +113,18 @@ object AuthorizationTokenService {
 
     private fun getAuthorizedUserForToken(request: AuthorizationToken): AuthorizedUser? = tokens[request.token]
 
-    fun whoAmI(request: AuthorizationToken): AuthorizationWhoAmIResult? =
+    fun whoAmI(request: AuthorizationToken): MessageWithItem<AuthorizationWhoAmIResult> =
             verifyToken(request, logout = false).user?.let {
-                Message(true, MessageType.WHOAMI, AuthorizationType.READ, null, it.userId, it.userId)
-                AuthorizationWhoAmIResult(
-                        it.userId,
-                        AuthRoleSpecification(it.role),
-                        it.expireTime
-                )
-            }
+                MessageWithItem(Message(true, MessageType.WHOAMI, AuthorizationType.READ, null, it.userId, it.userId),
+                        AuthorizationWhoAmIResult(
+                                it.userId,
+                                AuthRoleSpecification(it.role),
+                                it.expireTime
+                        ))
+            } ?: MessageWithItem(
+                    Message(false, MessageType.INVALID_TOKEN, AuthorizationType.READ, null, -1, -1),
+                    null as AuthorizationWhoAmIResult?
+            )
 
     fun revokeToken(
             request: AuthorizationToken

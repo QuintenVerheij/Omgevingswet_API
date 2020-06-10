@@ -5,18 +5,44 @@ import com.projdgroep3.omgevingswet.models.db.addresses
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.context.event.ApplicationPreparedEvent
+import org.springframework.boot.context.event.ApplicationReadyEvent
+import org.springframework.boot.context.event.ApplicationStartedEvent
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
+import org.springframework.context.event.EventListener
 import useraddresses
 import users
+import java.awt.Desktop
+import java.io.IOException
+import java.net.URI
 
 @SpringBootApplication
 class OmgevingswetApplication
 
 
-fun main(args: Array<String>) {
-	runApplication<OmgevingswetApplication>(*args)
+	fun main(args: Array<String>) {
+		runApplication<OmgevingswetApplication>(*args)
 
-	transaction(getDatabase()) {SchemaUtils.create(users, addresses, useraddresses)}
+		transaction(getDatabase()) { SchemaUtils.create(users, addresses, useraddresses) }
+		browse("http://localhost:8080/swagger-ui.html")
+	}
 
-}
+	fun browse(url: String) {
+		if (Desktop.isDesktopSupported()) {
+			var desktop: Desktop = Desktop.getDesktop();
+			try {
+				desktop.browse(URI(url));
+			} catch (e: IOException) {
+				e.printStackTrace();
+			}
+		} else {
+			var runtime = Runtime.getRuntime()
+			try {
+				runtime.exec("rundll32 url.dll,FileProtocolHandler " + url);
+			} catch (e: IOException) {
+				e.printStackTrace();
+			}
+		}
+	}
+

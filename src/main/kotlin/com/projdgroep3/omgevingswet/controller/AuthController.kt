@@ -3,6 +3,7 @@ package com.projdgroep3.omgevingswet.controller
 import com.projdgroep3.omgevingswet.models.auth.*
 import com.projdgroep3.omgevingswet.models.misc.Message
 import com.projdgroep3.omgevingswet.models.misc.MessageType
+import com.projdgroep3.omgevingswet.models.misc.MessageWithItem
 import com.projdgroep3.omgevingswet.service.auth.AuthenticationService
 import com.projdgroep3.omgevingswet.service.auth.AuthorizationTokenService
 import com.projdgroep3.omgevingswet.utils.toResponseEntity
@@ -26,5 +27,5 @@ class AuthController {
     @RequestMapping("/whoami", method = [RequestMethod.POST])
     fun whoAmI(
             @RequestBody request: AuthorizationToken):
-            ResponseEntity<AuthorizationWhoAmIResult> = AuthorizationTokenService.whoAmI(request).toResponseEntity()
+            ResponseEntity<MessageWithItem<AuthorizationWhoAmIResult>> = AuthorizationTokenService.whoAmI(request).toResponseEntity()
 }
