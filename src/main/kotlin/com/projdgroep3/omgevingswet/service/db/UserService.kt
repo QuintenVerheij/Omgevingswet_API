@@ -18,6 +18,7 @@ import com.projdgroep3.omgevingswet.models.misc.MessageWithItem
 import com.projdgroep3.omgevingswet.service.auth.AuthorizationService
 import com.projdgroep3.omgevingswet.service.auth.AuthorizationTokenService
 import com.projdgroep3.omgevingswet.utils.EncryptionUtils
+import com.projdgroep3.omgevingswet.utils.FileUtils
 import com.projdgroep3.omgevingswet.utils.MessageUtils
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -262,42 +263,25 @@ object UserService : DatabaseService<UserOutput>() {
         ), u.first())
     }
 
-    private fun getFileExtension(filename: String): String {
-        var extension = ""
-        val i = filename.lastIndexOf('.')
-        val p = Math.max(filename.lastIndexOf('/'), filename.lastIndexOf('\\'))
-        if(i > p){
-            extension = filename.substring(i+1)
-        }
-        return extension;
-    }
-
     fun storeImage(input: AuthorizedAction<Int>, file: MultipartFile): Message = AuthorizationService.executeUpdateUser(
             userId = input.input,
             token = input.auth,
             actionType = AuthorizationActionType.Update.USER
     ) {
         try {
-            if(file.originalFilename != null) {
-                val ext = getFileExtension(file.originalFilename!!)
-                if(!(ext == "jpg" || ext == "png")){
-                    return@executeUpdateUser Message(
-                            successful = false,
-                            messageType = MessageType.INVALID_FILE_FORMAT,
-                            authorizationType = AuthorizationType.UPDATE,
-                            message = "Image must be .jpg or .png",
-                            targetId = input.input,
-                            userId = AuthorizationTokenService.verifyToken(input.auth, logout = false).user?.userId ?: -1
-                    )
-                }
+            if(!FileUtils.ensureFileFormat(file.originalFilename ?: "", arrayOf(".jpg", ".png"))){
+                return@executeUpdateUser Message(
+                        successful = false,
+                        messageType = MessageType.EXCEPTION,
+                        authorizationType = AuthorizationType.UPDATE,
+                        message = "Image must be .jpg or .png",
+                        targetId = input.input,
+                        userId =  AuthorizationTokenService.verifyToken(input.auth, logout = false).user?.userId ?: -1
+                )
             }
-            val directoryName = Paths.get(config[server.files.imgdir] + "\\" + it.userId.toString())
-            //context.getRealPath("/") + config[server.files.imgdir] + "\\" + it.userId.toString())
-            if (!Files.exists(directoryName)) {
-                Files.createDirectories(directoryName)
-            }
+            val directoryName = FileUtils.createUserDirectory(it.userId)
             val bytes = file.bytes
-            val path: Path = Paths.get(directoryName.toString() + "\\" + it.userId.toString() + ".jpg")
+            val path: Path = Paths.get(directoryName.toString() + "\\" + it.userId.toString() + "_Profile.jpg")
             Files.write(path, bytes)
 
         } catch (e: IOException){
@@ -319,7 +303,7 @@ object UserService : DatabaseService<UserOutput>() {
 
     fun serveImage(userId: Int) : ByteArray {
 
-        val path = Paths.get(config[server.files.imgdir] + "\\" + userId.toString() + "\\" + userId.toString() + ".jpg")
+        val path = Paths.get(config[server.files.filedir] + "\\" + userId.toString() + "\\" + userId.toString() + "_Profile.jpg")
         //context.getRealPath("") + config[server.files.imgdir] + "\\" + userId.toString() + "\\" + userId.toString() + ".jpg")
         return if(!Files.exists(path)){
             ByteArray(0)

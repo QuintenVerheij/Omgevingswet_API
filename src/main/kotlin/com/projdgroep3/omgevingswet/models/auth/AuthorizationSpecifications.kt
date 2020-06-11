@@ -24,19 +24,22 @@ enum class AuthorizationRole(
                     //TODO(Implement info permissions)
             ),
             listOf(
-
+                    AuthorizationActionType.Create.MODEL
             ),
             listOf(
                     AuthorizationActionType.Read.USER,
-                    AuthorizationActionType.Read.ADDRESS
+                    AuthorizationActionType.Read.ADDRESS,
+                    AuthorizationActionType.Read.MODEL
             ),
             listOf(
                     AuthorizationActionType.Update.USER,
-                    AuthorizationActionType.Update.ADDRESS
+                    AuthorizationActionType.Update.ADDRESS,
+                    AuthorizationActionType.Update.MODEL
             ),
             listOf(
                     AuthorizationActionType.Delete.USER,
-                    AuthorizationActionType.Delete.ADDRESS
+                    AuthorizationActionType.Delete.ADDRESS,
+                    AuthorizationActionType.Delete.MODEL
             )
 
     ) {
@@ -149,6 +152,7 @@ object AuthorizationActionType {
 
         ADDRESS,
         USER,
+        MODEL,
         //TODO(ADD CREATE ACTION TYPES)
         ;
 
@@ -160,6 +164,7 @@ object AuthorizationActionType {
 
         ADDRESS,
         USER,
+        MODEL,
         //TODO(ADD READ ACTION TYPES)
         ;
 
@@ -171,6 +176,7 @@ object AuthorizationActionType {
 
         ADDRESS,
         USER,
+        MODEL,
         //TODO(ADD UPDATE ACTION TYPES)
         ;
 
@@ -182,6 +188,7 @@ object AuthorizationActionType {
 
         ADDRESS,
         USER,
+        MODEL,
         //TODO(ADD DELETE ACTION TYPES)
         ;
 

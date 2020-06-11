@@ -33,11 +33,6 @@ object useraddresses : Table() {
     override val primaryKey = PrimaryKey(userID, addressID, name = "PK_useraddresses_U_A")
 }
 
-object models: Table() {
-    val UserID = reference("UserID", users)
-    val model = blob("model")
-}
-
 
 
 data class UserOutput(

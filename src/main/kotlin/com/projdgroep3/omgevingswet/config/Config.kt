@@ -34,6 +34,6 @@ object server: PropertyGroup() {
     }
 
     object files: PropertyGroup() {
-        val imgdir by stringType
+        val filedir by stringType
     }
 }

@@ -4,6 +4,7 @@ import com.projdgroep3.omgevingswet.config.config
 import com.projdgroep3.omgevingswet.config.server
 import com.projdgroep3.omgevingswet.logic.Database.getDatabase
 import com.projdgroep3.omgevingswet.models.db.addresses
+import com.projdgroep3.omgevingswet.models.db.models
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.boot.autoconfigure.SpringBootApplication
@@ -26,7 +27,7 @@ class OmgevingswetApplication
 	fun main(args: Array<String>) {
 		runApplication<OmgevingswetApplication>(*args)
 
-		transaction(getDatabase()) { SchemaUtils.create(users, addresses, useraddresses) }
+		transaction(getDatabase()) { SchemaUtils.create(users, addresses, useraddresses, models) }
 		browse(config[server.baseUrl] + "/swagger-ui.html")
 	}
 
