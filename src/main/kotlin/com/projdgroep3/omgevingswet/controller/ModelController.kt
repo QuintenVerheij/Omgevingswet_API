@@ -45,7 +45,7 @@ class ModelController {
 
     @RequestMapping("public/read/{id}", method = [RequestMethod.GET])
     @ApiOperation("Download model if it is publicly visible")
-    fun readPublic(@PathVariable id: Int): ResponseEntity<MessageWithItem<List<ModelOutputPreview>>> = ModelService.read(id).toResponseEntity()
+    fun readPublic(@PathVariable id: Int): ResponseEntity<MessageWithItem<ByteArray>> = ModelService.read(id).toResponseEntity()
 
     @RequestMapping("/read", method = [RequestMethod.POST])
     @ApiOperation("Get info about all models available to this account and download thumbnails")
@@ -53,5 +53,5 @@ class ModelController {
 
     @RequestMapping("/read/{id}", method = [RequestMethod.POST])
     @ApiOperation("Download model if it is visible to current account")
-    fun read(@RequestBody auth : AuthorizedAction<Int>, @PathVariable id: Int): ResponseEntity<MessageWithItem<List<ModelOutputPreview>>> = ModelService.read(auth, id).toResponseEntity()
+    fun read(@RequestBody auth : AuthorizedAction<Int>, @PathVariable id: Int): ResponseEntity<MessageWithItem<ByteArray>> = ModelService.read(auth, id).toResponseEntity()
 }
