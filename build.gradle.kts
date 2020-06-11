@@ -12,6 +12,7 @@ version = "0.0.1-SNAPSHOT"
 java.sourceCompatibility = JavaVersion.VERSION_11
 
 repositories {
+	google()
 	jcenter()
 	mavenCentral()
 }
@@ -51,6 +52,10 @@ dependencies {
 	//Swagger
 	implementation("io.springfox", "springfox-swagger2", "2.9.2")
 	implementation("io.springfox", "springfox-swagger-ui", "2.9.2")
+
+	//MapBox
+	implementation("androidx.annotation:annotation:1.0.0")
+	implementation("com.mapbox.mapboxsdk:mapbox-sdk-services:5.2.1")
 
 	//Test
 	testImplementation("org.springframework.boot:spring-boot-starter-test") {

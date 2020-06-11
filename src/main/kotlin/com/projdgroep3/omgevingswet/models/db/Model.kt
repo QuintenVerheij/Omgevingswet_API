@@ -1,6 +1,7 @@
 package com.projdgroep3.omgevingswet.models.db
 
 import com.projdgroep3.omgevingswet.models.auth.AuthorizationToken
+import com.projdgroep3.omgevingswet.service.Identifiable
 import org.jetbrains.exposed.dao.IntEntity
 import org.jetbrains.exposed.dao.IntEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
@@ -38,7 +39,9 @@ data class ModelOutputPreview(
     val createdAt: String,
 
     val preview: ByteArray?
-) {
+):Identifiable {
+    override fun getIdentifier(): Int = id
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false

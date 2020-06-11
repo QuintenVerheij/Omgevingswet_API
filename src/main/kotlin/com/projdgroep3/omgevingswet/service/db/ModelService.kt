@@ -9,10 +9,13 @@ import com.projdgroep3.omgevingswet.models.auth.AuthorizationType
 import com.projdgroep3.omgevingswet.models.auth.AuthorizedAction
 import com.projdgroep3.omgevingswet.models.db.ModelCreateInput
 import com.projdgroep3.omgevingswet.models.db.ModelOutputPreview
+import com.projdgroep3.omgevingswet.models.db.addresses
 import com.projdgroep3.omgevingswet.models.db.models
 import com.projdgroep3.omgevingswet.models.db.models.createdAt
+import com.projdgroep3.omgevingswet.models.db.models.visibleRange
 import com.projdgroep3.omgevingswet.models.misc.Message
 import com.projdgroep3.omgevingswet.models.misc.MessageType
+import com.projdgroep3.omgevingswet.models.misc.MessageWithItem
 import com.projdgroep3.omgevingswet.service.auth.AuthorizationService
 import com.projdgroep3.omgevingswet.service.auth.AuthorizationTokenService
 import com.projdgroep3.omgevingswet.utils.FileUtils
@@ -21,6 +24,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.util.StreamUtils
 import org.springframework.web.multipart.MultipartFile
 import java.io.IOException
+import java.math.BigDecimal
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -81,6 +85,106 @@ object ModelService : DatabaseService<ModelOutputPreview>() {
         return out
     }
 
+    fun readAll(auth: AuthorizedAction<Int>): MessageWithItem<List<ModelOutputPreview>> = AuthorizationService.executeReadUsers(
+            userId = auth.input,
+            token = auth.auth,
+            actionType = AuthorizationActionType.Read.MODEL,
+            action = {
+                val out = readAll() as java.util.ArrayList<ModelOutputPreview>
+                var addressIds = ArrayList<Int>()
+                transaction(getDatabase()) {
+                    useraddresses.select { useraddresses.userID eq auth.input }.forEach {
+                        addressIds.add(it[useraddresses.addressID].value)
+                    }
+                }
+
+                var coordAddresses: ArrayList<ArrayList<BigDecimal>> = ArrayList()
+                addressIds.forEach {
+                    coordAddresses.add(AddressService.getCoords(it) as java.util.ArrayList<BigDecimal>)
+                }
+                transaction(getDatabase()) {
+
+                    models.select { models.public eq false }.forEach {
+                        val coords: ArrayList<BigDecimal> = ArrayList()
+                        coords.add(it[models.latitude])
+                        coords.add(it[models.longitude])
+
+                        for (item in coordAddresses) {
+                            if (AddressService.getDistance(item, coords) <= it[visibleRange]) {
+                                out.add(ModelOutputPreview(
+                                        it[models.id].value,
+                                        it[models.userId].value,
+                                        it[models.public],
+                                        it[models.visibleRange],
+                                        it[models.longitude],
+                                        it[models.latitude],
+                                        it[createdAt],
+                                        servePreview(it[models.userId].value, it[models.id].value)
+                                ))
+                            }
+                        }
+                    }
+                }
+                return@executeReadUsers out
+            }) { it as ModelOutputPreview }
+
+    fun read(id: Int): MessageWithItem<ByteArray> {
+        var isPublic = false
+        transaction(getDatabase()) {
+            if (models.select { models.id eq id }.first()[models.public]) {
+                isPublic = true
+            }
+        }
+        if (isPublic) {
+            return MessageWithItem(Message.successfulEmpty(), serveModel(id))
+        }
+        return MessageWithItem(Message(
+                successful = false,
+                messageType = MessageType.NOT_AUTHORIZED,
+                authorizationType = AuthorizationType.READ,
+                message = "Not authorized to perform this action",
+                targetId = id,
+                userId = -1
+        ), null)
+    }
+
+    fun read(auth: AuthorizedAction<Int>, id: Int): MessageWithItem<ByteArray> = AuthorizationService.executeGenericUser(
+            userId = auth.input,
+            token = auth.auth,
+            actionType = AuthorizationActionType.Read.MODEL,
+            action =
+            {
+                var isPublic = false
+                val addressIds = ArrayList<Int>()
+
+                transaction(getDatabase()) {
+                    if (models.select { models.id eq id }.first()[models.public]) {
+                        isPublic = true
+                    } else {
+                        useraddresses.select { useraddresses.userID eq auth.input }.forEach {
+                            addressIds.add(it[useraddresses.addressID].value)
+                        }
+                        val coordAddresses: ArrayList<ArrayList<BigDecimal>> = ArrayList()
+                        addressIds.forEach {
+                            coordAddresses.add(AddressService.getCoords(it) as java.util.ArrayList<BigDecimal>)
+                        }
+                        val coords: ArrayList<BigDecimal> = ArrayList()
+                        val res = models.select { models.id eq id }.first()
+                        coords.add(res[models.latitude])
+                        coords.add(res[models.longitude])
+                        coordAddresses.forEach {
+                            if (AddressService.getDistance(it, coords) < res[visibleRange]) {
+                                isPublic = true
+                            }
+                        }
+                    }
+                }
+                if (isPublic) {
+                    return@executeGenericUser serveModel(id)
+                }
+                return@executeGenericUser ByteArray(0)
+            }, identifier = id)
+
     fun updateFiles(auth: AuthorizedAction<Int>, modelId: Int, preview: MultipartFile, model: MultipartFile): Message {
         var m = storePreview(auth, preview, modelId)
         if (m.successful) {
@@ -92,7 +196,7 @@ object ModelService : DatabaseService<ModelOutputPreview>() {
 
     fun servePreview(modelId: Int): ByteArray {
         return transaction(getDatabase()) {
-            if (models.select { models.id eq modelId }.fetchSize == 1) {
+            if (models.select { models.id eq modelId }.count() == 1.toLong()) {
                 return@transaction servePreview(models.select { models.id eq modelId }.first()[models.userId].value, modelId)
             } else {
                 return@transaction ByteArray(0)
@@ -112,7 +216,7 @@ object ModelService : DatabaseService<ModelOutputPreview>() {
 
     fun serveModel(modelId: Int): ByteArray {
         return transaction(getDatabase()) {
-            if (models.select { models.id eq modelId }.fetchSize == 1) {
+            if (models.select { models.id eq modelId }.count() == 1.toLong()) {
                 return@transaction serveModel(models.select { models.id eq modelId }.first()[models.userId].value, modelId)
             } else {
                 return@transaction ByteArray(0)

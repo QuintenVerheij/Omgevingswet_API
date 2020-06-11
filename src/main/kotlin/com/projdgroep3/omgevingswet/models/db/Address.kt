@@ -21,14 +21,6 @@ class Address(id: EntityID<Int>) : IntEntity(id) {
     var housenumber by addresses.housenumber
     var housenumberaddition by addresses.housenumberaddition
     var postalcode by addresses.postalcode
-
-    fun toAddressCreateInput() = AddressCreateInput(
-            this.city,
-            this.street,
-            this.housenumber,
-            this.housenumberaddition,
-            this.postalcode
-    )
 }
 
 data class AddressOutput(

@@ -36,4 +36,8 @@ object server: PropertyGroup() {
     object files: PropertyGroup() {
         val filedir by stringType
     }
+
+    object mapbox: PropertyGroup() {
+        val accesstoken by stringType
+    }
 }

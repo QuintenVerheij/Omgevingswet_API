@@ -10,6 +10,7 @@ import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import java.math.BigDecimal
 
 @CrossOrigin
 @RestController
@@ -27,4 +28,14 @@ class AddressController {
     @RequestMapping("/read", method=[RequestMethod.GET])
     @ApiOperation("Fetch a list of all addresses")
     fun readAddress(): ResponseEntity<List<AddressOutput>> = AddressService.readAll().toResponseEntity()
+
+    @RequestMapping("/read/coords/{id}", method=[RequestMethod.GET])
+    @ApiOperation("Get coordinates for address")
+    fun getCoords(
+            @PathVariable id: Int): ResponseEntity<List<BigDecimal>> = AddressService.getCoords(id).toResponseEntity()
+
+    @RequestMapping("/read/distance/{id1}/{id2}", method=[RequestMethod.GET])
+    @ApiOperation("Get coordinates for address")
+    fun getDistance(
+            @PathVariable id1: Int, @PathVariable id2: Int): ResponseEntity<Double> = AddressService.getDistance(id1, id2).toResponseEntity()
 }

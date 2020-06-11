@@ -194,6 +194,17 @@ object AuthorizationService {
         MessageWithItem(it.message, it.item?.let(cast))
     }
 
+    fun <T> executeGenericUser(
+            userId: Int,
+            token: AuthorizationToken,
+            actionType: AuthorizationActionType.Read,
+            action: () -> T,
+            identifier: Int
+    ): MessageWithItem<T> = executeGeneric(userId, token, actionType.getAuthorizationType(), action,
+            verifyUser = { user -> actionType in user.role.allowedRead && userCheck(user, userId) },
+            identifier = {identifier})
+
+
     fun executeUpdate(
             id: Int,
             token: AuthorizationToken,
