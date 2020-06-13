@@ -148,6 +148,106 @@ object ModelService : DatabaseService<ModelOutputPreview>() {
         ), null)
     }
 
+    fun readBy(userId: Int): MessageWithItem<ArrayList<ModelOutputPreview>> {
+        val out = ArrayList<ModelOutputPreview>()
+        transaction(getDatabase()) {
+            models.select { (models.public eq true) and (models.userId eq userId)}.forEach {
+                out.add(ModelOutputPreview(
+                        it[models.id].value,
+                        it[models.userId].value,
+                        it[models.public],
+                        it[models.visibleRange],
+                        it[models.longitude],
+                        it[models.latitude],
+                        it[createdAt],
+                        servePreview(it[models.userId].value, it[models.id].value)
+                ))
+            }
+        }
+        return if(!out.isEmpty()){
+            MessageWithItem(Message.successfulEmpty(), out)
+        }else{
+            MessageWithItem(Message(
+                    successful = false,
+                    messageType = MessageType.EXCEPTION,
+                    authorizationType = AuthorizationType.READ,
+                    message = "Could not find any models with specified parameters",
+                    targetId = userId,
+                    userId = -1),out)
+        }
+    }
+
+    fun readBy(auth: AuthorizedAction<Int>, targetId: Int) : MessageWithItem<ArrayList<ModelOutputPreview>> = AuthorizationService.executeGenericUser(
+            userId = auth.input,
+            token = auth.auth,
+            actionType = AuthorizationActionType.Read.MODEL,
+            action = {
+                val out = readBy(targetId).item as java.util.ArrayList<ModelOutputPreview>
+                var addressIds = ArrayList<Int>()
+                transaction(getDatabase()) {
+                    useraddresses.select { useraddresses.userID eq auth.input }.forEach {
+                        addressIds.add(it[useraddresses.addressID].value)
+                    }
+                }
+
+                var coordAddresses: ArrayList<ArrayList<BigDecimal>> = ArrayList()
+                addressIds.forEach {
+                    coordAddresses.add(AddressService.getCoords(it) as java.util.ArrayList<BigDecimal>)
+                }
+                transaction(getDatabase()) {
+
+                    models.select { (models.public eq false) and (models.userId eq targetId)}.forEach {
+                        val coords: ArrayList<BigDecimal> = ArrayList()
+                        coords.add(it[models.latitude])
+                        coords.add(it[models.longitude])
+
+                        for (item in coordAddresses) {
+                            if (AddressService.getDistance(item, coords) <= it[visibleRange]) {
+                                out.add(ModelOutputPreview(
+                                        it[models.id].value,
+                                        it[models.userId].value,
+                                        it[models.public],
+                                        it[models.visibleRange],
+                                        it[models.longitude],
+                                        it[models.latitude],
+                                        it[createdAt],
+                                        servePreview(it[models.userId].value, it[models.id].value)
+                                ))
+                            }
+                        }
+                    }
+                }
+                return@executeGenericUser out
+            },
+            identifier = targetId
+    )
+
+    fun readBy(auth: AuthorizedAction<Int>) : MessageWithItem<ArrayList<ModelOutputPreview>> = AuthorizationService.executeGenericUser(
+            userId = auth.input,
+            token = auth.auth,
+            actionType = AuthorizationActionType.Read.MODEL,
+            action = {
+                val out = ArrayList<ModelOutputPreview>()
+                transaction(getDatabase()) {
+
+                    models.select { models.userId eq auth.input }.forEach {
+                        out.add(ModelOutputPreview(
+                                it[models.id].value,
+                                it[models.userId].value,
+                                it[models.public],
+                                it[models.visibleRange],
+                                it[models.longitude],
+                                it[models.latitude],
+                                it[createdAt],
+                                servePreview(it[models.userId].value, it[models.id].value)
+                        ))
+                    }
+                }
+                return@executeGenericUser out
+            },
+            identifier = auth.input
+    )
+
     fun read(auth: AuthorizedAction<Int>, id: Int): MessageWithItem<ByteArray> = AuthorizationService.executeGenericUser(
             userId = auth.input,
             token = auth.auth,

@@ -11,6 +11,7 @@ import com.projdgroep3.omgevingswet.logic.Database.getDatabase
 import com.projdgroep3.omgevingswet.models.auth.*
 import com.projdgroep3.omgevingswet.models.db.Address
 import com.projdgroep3.omgevingswet.models.db.AddressCreateInput
+import com.projdgroep3.omgevingswet.models.db.ModelOutputPreview
 import com.projdgroep3.omgevingswet.models.db.addresses
 import com.projdgroep3.omgevingswet.models.misc.Message
 import com.projdgroep3.omgevingswet.models.misc.MessageType
@@ -179,10 +180,12 @@ object UserService : DatabaseService<UserOutput>() {
 
     //READ
     override fun readAll(): List<UserOutput> {
-        var u = ArrayList<UserOutput>()
+        val u = ArrayList<UserOutput>()
+
         transaction(getDatabase()) {
             users.selectAll().forEach {
-                var a = ArrayList<AddressCreateInput>()
+                val a = ArrayList<AddressCreateInput>()
+                val m : ArrayList<ModelOutputPreview> = ModelService.readBy(it[users.id].value).item ?: ArrayList()
                 useraddresses.select { useraddresses.userID eq it[users.id].value }.forEach {
                     addresses.select { addresses.id eq it[useraddresses.addressID].value }.forEach {
                         a.add(AddressCreateInput(
@@ -198,7 +201,8 @@ object UserService : DatabaseService<UserOutput>() {
                         User[it[users.id]].id.value,
                         it[users.username],
                         it[users.email],
-                        a
+                        a,
+                        m
                 ))
             }
         }
@@ -217,8 +221,9 @@ object UserService : DatabaseService<UserOutput>() {
             token: AuthorizationToken,
             id: Int
     ): MessageWithItem<UserOutput> = AuthorizationService.executeReadOneUser(id, token, AuthorizationActionType.Read.USER, {
-        var u = ArrayList<UserOutput>()
-        var a = ArrayList<AddressCreateInput>()
+        val u = ArrayList<UserOutput>()
+        val a = ArrayList<AddressCreateInput>()
+        val m : ArrayList<ModelOutputPreview> = ModelService.readBy(AuthorizedAction(token, id)).item ?: ArrayList()
         transaction(getDatabase()) {
             users.select { users.id eq id }.forEach {
                 useraddresses.select { useraddresses.userID eq it[users.id].value }.forEach {
@@ -236,7 +241,8 @@ object UserService : DatabaseService<UserOutput>() {
                         User[it[users.id]].id.value,
                         it[users.username],
                         it[users.email],
-                        a
+                        a,
+                        m
                 ))
             }
         }
@@ -244,12 +250,14 @@ object UserService : DatabaseService<UserOutput>() {
     }) { it as UserOutput }
 
     fun readOtherUser(id: Int): MessageWithItem<UserOutputPublic> {
-        var u = ArrayList<UserOutputPublic>()
+        val u = ArrayList<UserOutputPublic>()
+        val m : ArrayList<ModelOutputPreview> = ModelService.readBy(id).item ?: ArrayList()
         transaction(getDatabase()) {
             users.select { users.id eq id }.forEach {
                 u.add(UserOutputPublic(
                         User[it[users.id]].id.value,
-                        it[users.username]
+                        it[users.username],
+                        m
                 ))
             }
         }

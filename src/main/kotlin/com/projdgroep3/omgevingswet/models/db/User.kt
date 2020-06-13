@@ -1,5 +1,6 @@
 import com.projdgroep3.omgevingswet.models.db.Address
 import com.projdgroep3.omgevingswet.models.db.AddressCreateInput
+import com.projdgroep3.omgevingswet.models.db.ModelOutputPreview
 import com.projdgroep3.omgevingswet.models.db.addresses
 import com.projdgroep3.omgevingswet.service.Identifiable
 import org.jetbrains.exposed.dao.IntEntity
@@ -39,14 +40,16 @@ data class UserOutput(
         val id: Int,
         val username: String,
         val email: String,
-        val address: ArrayList<AddressCreateInput>
+        val address: ArrayList<AddressCreateInput>,
+        val models: ArrayList<ModelOutputPreview>
 ): Identifiable{
     override fun getIdentifier():Int = id
 }
 
 data class UserOutputPublic(
         val id: Int,
-        val username: String
+        val username: String,
+        val models: ArrayList<ModelOutputPreview>
 )//: Identifiable {
 //    override fun getIdentifier(): Int = id
 //}
