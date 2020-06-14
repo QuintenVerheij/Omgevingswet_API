@@ -378,7 +378,7 @@ object ModelService : DatabaseService<ModelOutputPreview>() {
             actionType = AuthorizationActionType.Update.MODEL
     ) {
         try {
-            if (!FileUtils.ensureFileFormat(file.originalFilename ?: "", arrayOf("fbx"))) {
+            if (!FileUtils.ensureFileFormat(file.originalFilename ?: "", arrayOf("obj"))) {
                 return@executeUpdateUser Message(
                         successful = false,
                         messageType = MessageType.EXCEPTION,

@@ -277,7 +277,7 @@ object UserService : DatabaseService<UserOutput>() {
             actionType = AuthorizationActionType.Update.USER
     ) {
         try {
-            if(!FileUtils.ensureFileFormat(file.originalFilename ?: "", arrayOf(".jpg", ".png"))){
+            if(!FileUtils.ensureFileFormat(file.originalFilename ?: "", arrayOf("jpg", "png"))){
                 return@executeUpdateUser Message(
                         successful = false,
                         messageType = MessageType.EXCEPTION,
