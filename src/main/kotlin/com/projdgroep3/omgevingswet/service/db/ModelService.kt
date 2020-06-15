@@ -7,10 +7,7 @@ import com.projdgroep3.omgevingswet.logic.Database.getDatabase
 import com.projdgroep3.omgevingswet.models.auth.AuthorizationActionType
 import com.projdgroep3.omgevingswet.models.auth.AuthorizationType
 import com.projdgroep3.omgevingswet.models.auth.AuthorizedAction
-import com.projdgroep3.omgevingswet.models.db.ModelCreateInput
-import com.projdgroep3.omgevingswet.models.db.ModelOutputPreview
-import com.projdgroep3.omgevingswet.models.db.addresses
-import com.projdgroep3.omgevingswet.models.db.models
+import com.projdgroep3.omgevingswet.models.db.*
 import com.projdgroep3.omgevingswet.models.db.models.createdAt
 import com.projdgroep3.omgevingswet.models.db.models.visibleRange
 import com.projdgroep3.omgevingswet.models.misc.Message
@@ -20,6 +17,7 @@ import com.projdgroep3.omgevingswet.service.auth.AuthorizationService
 import com.projdgroep3.omgevingswet.service.auth.AuthorizationTokenService
 import com.projdgroep3.omgevingswet.utils.FileUtils
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.util.StreamUtils
 import org.springframework.web.multipart.MultipartFile
@@ -128,15 +126,30 @@ object ModelService : DatabaseService<ModelOutputPreview>() {
                 return@executeReadUsers out
             }) { it as ModelOutputPreview }
 
-    fun read(id: Int): MessageWithItem<ByteArray> {
+    fun read(id: Int): MessageWithItem<ModelOutput> {
         var isPublic = false
+        var model: ModelOutput? = null
         transaction(getDatabase()) {
             if (models.select { models.id eq id }.first()[models.public]) {
                 isPublic = true
+                models.select { models.id eq id }.first().let {
+                    model = ModelOutput(
+                            it[models.id].value,
+                            it[models.userId].value,
+                            it[models.public],
+                            it[models.visibleRange],
+                            it[models.longitude],
+                            it[models.latitude],
+                            it[createdAt],
+                            serveModel(it[models.id].value),
+                            serveJson(it[models.id].value)
+                    )
+                }
             }
         }
         if (isPublic) {
-            return MessageWithItem(Message.successfulEmpty(), serveModel(id))
+            return MessageWithItem(Message.successfulEmpty(),
+                    model)
         }
         return MessageWithItem(Message(
                 successful = false,
@@ -151,7 +164,7 @@ object ModelService : DatabaseService<ModelOutputPreview>() {
     fun readBy(userId: Int): MessageWithItem<ArrayList<ModelOutputPreview>> {
         val out = ArrayList<ModelOutputPreview>()
         transaction(getDatabase()) {
-            models.select { (models.public eq true) and (models.userId eq userId)}.forEach {
+            models.select { (models.public eq true) and (models.userId eq userId) }.forEach {
                 out.add(ModelOutputPreview(
                         it[models.id].value,
                         it[models.userId].value,
@@ -164,20 +177,20 @@ object ModelService : DatabaseService<ModelOutputPreview>() {
                 ))
             }
         }
-        return if(!out.isEmpty()){
+        return if (!out.isEmpty()) {
             MessageWithItem(Message.successfulEmpty(), out)
-        }else{
+        } else {
             MessageWithItem(Message(
                     successful = false,
                     messageType = MessageType.EXCEPTION,
                     authorizationType = AuthorizationType.READ,
                     message = "Could not find any models with specified parameters",
                     targetId = userId,
-                    userId = -1),out)
+                    userId = -1), out)
         }
     }
 
-    fun readBy(auth: AuthorizedAction<Int>, targetId: Int) : MessageWithItem<ArrayList<ModelOutputPreview>> = AuthorizationService.executeGenericUser(
+    fun readBy(auth: AuthorizedAction<Int>, targetId: Int): MessageWithItem<ArrayList<ModelOutputPreview>> = AuthorizationService.executeGenericUser(
             userId = auth.input,
             token = auth.auth,
             actionType = AuthorizationActionType.Read.MODEL,
@@ -196,7 +209,7 @@ object ModelService : DatabaseService<ModelOutputPreview>() {
                 }
                 transaction(getDatabase()) {
 
-                    models.select { (models.public eq false) and (models.userId eq targetId)}.forEach {
+                    models.select { (models.public eq false) and (models.userId eq targetId) }.forEach {
                         val coords: ArrayList<BigDecimal> = ArrayList()
                         coords.add(it[models.latitude])
                         coords.add(it[models.longitude])
@@ -222,7 +235,7 @@ object ModelService : DatabaseService<ModelOutputPreview>() {
             identifier = targetId
     )
 
-    fun readBy(auth: AuthorizedAction<Int>) : MessageWithItem<ArrayList<ModelOutputPreview>> = AuthorizationService.executeGenericUser(
+    fun readBy(auth: AuthorizedAction<Int>): MessageWithItem<ArrayList<ModelOutputPreview>> = AuthorizationService.executeGenericUser(
             userId = auth.input,
             token = auth.auth,
             actionType = AuthorizationActionType.Read.MODEL,
@@ -248,7 +261,7 @@ object ModelService : DatabaseService<ModelOutputPreview>() {
             identifier = auth.input
     )
 
-    fun read(auth: AuthorizedAction<Int>, id: Int): MessageWithItem<ByteArray> = AuthorizationService.executeGenericUser(
+    fun read(auth: AuthorizedAction<Int>, id: Int): MessageWithItem<ModelOutput?> = AuthorizationService.executeGenericUser(
             userId = auth.input,
             token = auth.auth,
             actionType = AuthorizationActionType.Read.MODEL,
@@ -256,7 +269,7 @@ object ModelService : DatabaseService<ModelOutputPreview>() {
             {
                 var isPublic = false
                 val addressIds = ArrayList<Int>()
-
+                var model: ModelOutput? = null
                 transaction(getDatabase()) {
                     if (models.select { models.id eq id }.first()[models.public]) {
                         isPublic = true
@@ -280,15 +293,31 @@ object ModelService : DatabaseService<ModelOutputPreview>() {
                     }
                 }
                 if (isPublic) {
-                    return@executeGenericUser serveModel(id)
+                    transaction(getDatabase()) {
+                        models.select { (models.id eq id) }.forEach {
+                            model = ModelOutput(it[models.id].value,
+                                    it[models.userId].value,
+                                    it[models.public],
+                                    it[models.visibleRange],
+                                    it[models.longitude],
+                                    it[models.latitude],
+                                    it[createdAt],
+                                    serveModel(it[models.id].value),
+                                    serveJson(it[models.id].value))
+                        }
+                    }
+                    return@executeGenericUser model
                 }
-                return@executeGenericUser ByteArray(0)
+                return@executeGenericUser null
             }, identifier = id)
 
-    fun updateFiles(auth: AuthorizedAction<Int>, modelId: Int, preview: MultipartFile, model: MultipartFile): Message {
+    fun updateFiles(auth: AuthorizedAction<Int>, modelId: Int, preview: MultipartFile, model: MultipartFile, modelJson: MultipartFile): Message {
         var m = storePreview(auth, preview, modelId)
         if (m.successful) {
-            return storeModel(auth, model, modelId)
+            m = storeModel(auth, model, modelId)
+            if (m.successful) {
+                storeJson(auth, modelJson, modelId)
+            }
         }
         return m;
     }
@@ -325,7 +354,27 @@ object ModelService : DatabaseService<ModelOutputPreview>() {
     }
 
     private fun serveModel(userId: Int, modelId: Int): ByteArray {
-        val path = Paths.get(config[server.files.filedir] + "\\" + userId.toString() + "\\" + modelId.toString() + ".jpg")
+        val path = Paths.get(config[server.files.filedir] + "\\" + userId.toString() + "\\" + modelId.toString() + ".obj")
+        return if (!Files.exists(path)) {
+            ByteArray(0)
+        } else {
+            val stream = Files.newInputStream(path)
+            StreamUtils.copyToByteArray(stream)
+        }
+    }
+
+    fun serveJson(modelId: Int): ByteArray {
+        return transaction(getDatabase()) {
+            if (models.select { models.id eq modelId }.count() == 1.toLong()) {
+                return@transaction serveJson(models.select { models.id eq modelId }.first()[models.userId].value, modelId)
+            } else {
+                return@transaction ByteArray(0)
+            }
+        }
+    }
+
+    private fun serveJson(userId: Int, modelId: Int): ByteArray {
+        val path = Paths.get(config[server.files.filedir] + "\\" + userId.toString() + "\\" + modelId.toString() + ".json")
         return if (!Files.exists(path)) {
             ByteArray(0)
         } else {
@@ -383,14 +432,52 @@ object ModelService : DatabaseService<ModelOutputPreview>() {
                         successful = false,
                         messageType = MessageType.EXCEPTION,
                         authorizationType = AuthorizationType.UPDATE,
-                        message = "Model must be .fbx",
+                        message = "Model must be .obj",
                         targetId = input.input,
                         userId = AuthorizationTokenService.verifyToken(input.auth, logout = false).user?.userId ?: -1
                 )
             }
             val directoryName = FileUtils.createUserDirectory(it.userId);
             val bytes = file.bytes
-            val path: Path = Paths.get("$directoryName\\$modelId.fbx")
+            val path: Path = Paths.get("$directoryName\\$modelId.obj")
+            Files.write(path, bytes)
+
+        } catch (e: IOException) {
+            println(e.stackTrace)
+            return@executeUpdateUser Message(
+                    successful = false,
+                    messageType = MessageType.EXCEPTION,
+                    authorizationType = AuthorizationType.UPDATE,
+                    message = "Internal server error occurred storing file",
+                    targetId = input.input,
+                    userId = AuthorizationTokenService.verifyToken(input.auth, logout = false).user?.userId ?: -1
+            )
+        }
+        Message.successful(
+                AuthorizationTokenService.verifyToken(input.auth, logout = false).user?.userId ?: -1,
+                AuthorizationType.UPDATE
+        )
+    }
+
+    private fun storeJson(input: AuthorizedAction<Int>, file: MultipartFile, modelId: Int): Message = AuthorizationService.executeUpdateUser(
+            userId = input.input,
+            token = input.auth,
+            actionType = AuthorizationActionType.Update.MODEL
+    ) {
+        try {
+            if (!FileUtils.ensureFileFormat(file.originalFilename ?: "", arrayOf("json"))) {
+                return@executeUpdateUser Message(
+                        successful = false,
+                        messageType = MessageType.EXCEPTION,
+                        authorizationType = AuthorizationType.UPDATE,
+                        message = "ModelJson must be .json",
+                        targetId = input.input,
+                        userId = AuthorizationTokenService.verifyToken(input.auth, logout = false).user?.userId ?: -1
+                )
+            }
+            val directoryName = FileUtils.createUserDirectory(it.userId);
+            val bytes = file.bytes
+            val path: Path = Paths.get("$directoryName\\$modelId.json")
             Files.write(path, bytes)
 
         } catch (e: IOException) {

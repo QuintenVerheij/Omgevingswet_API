@@ -85,7 +85,8 @@ data class ModelOutput(
         val latitude: BigDecimal,
         val createdAt: String,
 
-        val model: ByteArray?
+        val model: ByteArray?,
+        val json: ByteArray?
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

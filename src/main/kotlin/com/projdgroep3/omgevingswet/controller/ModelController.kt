@@ -2,6 +2,7 @@ package com.projdgroep3.omgevingswet.controller
 
 import com.projdgroep3.omgevingswet.models.auth.*
 import com.projdgroep3.omgevingswet.models.db.ModelCreateInput
+import com.projdgroep3.omgevingswet.models.db.ModelOutput
 import com.projdgroep3.omgevingswet.models.db.ModelOutputPreview
 import com.projdgroep3.omgevingswet.models.misc.Message
 import com.projdgroep3.omgevingswet.models.misc.MessageType
@@ -36,8 +37,9 @@ class ModelController {
                     @RequestParam userId: Int,
                     @RequestParam modelId: Int,
                     @RequestParam preview: MultipartFile,
-                    @RequestParam model: MultipartFile): ResponseEntity<Message> {
-       return ModelService.updateFiles(AuthorizedAction(token, userId),modelId, preview, model).toResponseEntity()
+                    @RequestParam model: MultipartFile,
+                    @RequestParam modelJson: MultipartFile): ResponseEntity<Message> {
+       return ModelService.updateFiles(AuthorizedAction(token, userId),modelId, preview, model, modelJson).toResponseEntity()
     }
 
     @RequestMapping("/public/read", method = [RequestMethod.GET])
@@ -46,7 +48,7 @@ class ModelController {
 
     @RequestMapping("public/read/{id}", method = [RequestMethod.GET])
     @ApiOperation("Download model if it is publicly visible")
-    fun readPublic(@PathVariable id: Int): ResponseEntity<MessageWithItem<ByteArray>> = ModelService.read(id).toResponseEntity()
+    fun readPublic(@PathVariable id: Int): ResponseEntity<MessageWithItem<ModelOutput>> = ModelService.read(id).toResponseEntity()
 
     @RequestMapping("public/read/by/{id}", method = [RequestMethod.GET])
     @ApiOperation("Get info about all models available to this account by a certain user")
@@ -62,5 +64,5 @@ class ModelController {
 
     @RequestMapping("/read/{id}", method = [RequestMethod.POST])
     @ApiOperation("Download model if it is visible to current account")
-    fun read(@RequestBody auth : AuthorizedAction<Int>, @PathVariable id: Int): ResponseEntity<MessageWithItem<ByteArray>> = ModelService.read(auth, id).toResponseEntity()
+    fun read(@RequestBody auth : AuthorizedAction<Int>, @PathVariable id: Int): ResponseEntity<MessageWithItem<ModelOutput?>> = ModelService.read(auth, id).toResponseEntity()
 }
