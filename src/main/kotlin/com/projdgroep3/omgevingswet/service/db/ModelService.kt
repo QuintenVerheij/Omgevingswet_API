@@ -141,7 +141,6 @@ object ModelService : DatabaseService<ModelOutputPreview>() {
                             it[models.longitude],
                             it[models.latitude],
                             it[createdAt],
-                            serveModel(it[models.id].value),
                             serveJson(it[models.id].value)
                     )
                 }
@@ -302,7 +301,6 @@ object ModelService : DatabaseService<ModelOutputPreview>() {
                                     it[models.longitude],
                                     it[models.latitude],
                                     it[createdAt],
-                                    serveModel(it[models.id].value),
                                     serveJson(it[models.id].value))
                         }
                     }
@@ -314,11 +312,8 @@ object ModelService : DatabaseService<ModelOutputPreview>() {
     fun updateFiles(auth: AuthorizedAction<Int>, modelId: Int, preview: MultipartFile, model: MultipartFile, modelJson: MultipartFile): Message {
         var m = storePreview(auth, preview, modelId)
         if (m.successful) {
-            m = storeModel(auth, model, modelId)
-            if (m.successful) {
-                storeJson(auth, modelJson, modelId)
+                m = storeJson(auth, modelJson, modelId)
             }
-        }
         return m;
     }
 

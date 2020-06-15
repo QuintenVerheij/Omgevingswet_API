@@ -84,8 +84,6 @@ data class ModelOutput(
         val longitude: BigDecimal,
         val latitude: BigDecimal,
         val createdAt: String,
-
-        val model: ByteArray?,
         val json: ByteArray?
 ) {
     override fun equals(other: Any?): Boolean {
@@ -101,10 +99,10 @@ data class ModelOutput(
         if (longitude != other.longitude) return false
         if (latitude != other.latitude) return false
         if (createdAt != other.createdAt) return false
-        if (model != null) {
-            if (other.model == null) return false
-            if (!model.contentEquals(other.model)) return false
-        } else if (other.model != null) return false
+        if (json != null) {
+            if (other.json == null) return false
+            if (!json.contentEquals(other.json)) return false
+        } else if (other.json != null) return false
 
         return true
     }
@@ -117,7 +115,7 @@ data class ModelOutput(
         result = 31 * result + longitude.hashCode()
         result = 31 * result + latitude.hashCode()
         result = 31 * result + createdAt.hashCode()
-        result = 31 * result + (model?.contentHashCode() ?: 0)
+        result = 31 * result + (json?.contentHashCode() ?: 0)
         return result
     }
 }
