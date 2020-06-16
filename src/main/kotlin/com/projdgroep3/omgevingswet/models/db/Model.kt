@@ -21,12 +21,12 @@ object models: IntIdTable() {
 class Model(id: EntityID<Int>): IntEntity(id) {
     companion object : IntEntityClass<Model>(models)
 
-    val userId by models.userId
-    val public by models.public
-    val visibleRange by models.visibleRange
-    val longitude by models.longitude
-    val latitude by models.latitude
-    val createdAt by models.createdAt
+    var userId by models.userId
+    var public by models.public
+    var visibleRange by models.visibleRange
+    var longitude by models.longitude
+    var latitude by models.latitude
+    var createdAt by models.createdAt
 }
 
 data class ModelOutputPreview(
@@ -123,7 +123,7 @@ data class ModelOutput(
 data class ModelCreateInput(
         val token: AuthorizationToken,
         val userId: Int,
-        val public: Boolean,
+        val pub: Boolean,
         val visibleRange: Int,
         val longitude: BigDecimal,
         val latitude: BigDecimal

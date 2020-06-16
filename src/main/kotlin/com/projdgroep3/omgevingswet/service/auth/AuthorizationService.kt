@@ -8,6 +8,7 @@ import com.projdgroep3.omgevingswet.models.misc.Message
 import com.projdgroep3.omgevingswet.models.misc.MessageType
 import com.projdgroep3.omgevingswet.models.misc.MessageWithItem
 import com.projdgroep3.omgevingswet.service.Identifiable
+import com.projdgroep3.omgevingswet.service.auth.AuthorizationTokenService.verifyToken
 
 object AuthorizationService {
     private fun userCheck(
@@ -180,7 +181,7 @@ object AuthorizationService {
             actionType: AuthorizationActionType.Read,
             action: () -> List<Identifiable>,
             cast: (Identifiable) -> T
-    ): MessageWithItem<List<T>> = executeGenericList(userId, token, actionType.getAuthorizationType(), action) { user -> actionType in user.role.allowedRead && userCheck(user, userId)}.let {
+    ): MessageWithItem<List<T>> = executeGenericList(userId, token, actionType.getAuthorizationType(), action) { user -> actionType in user.role.allowedRead && userCheck(user, userId) }.let {
         MessageWithItem(it.message, it.item?.map(cast))
     }
 
@@ -202,7 +203,7 @@ object AuthorizationService {
             identifier: Int
     ): MessageWithItem<T> = executeGeneric(userId, token, actionType.getAuthorizationType(), action,
             verifyUser = { user -> actionType in user.role.allowedRead && userCheck(user, userId) },
-            identifier = {identifier})
+            identifier = { identifier })
 
 
     fun executeUpdate(
@@ -217,7 +218,11 @@ object AuthorizationService {
             token: AuthorizationToken,
             actionType: AuthorizationActionType.Update,
             action: (AuthorizedUser) -> Message
-    ): Message = execute(userId, token, actionType.getAuthorizationType(), action) { user -> actionType in user.role.allowedUpdate && userCheck(user, userId) }
+    ): Message {
+        val user: AuthorizedUser? = verifyToken(token, logout=false).user
+        return execute(userId, token, actionType.getAuthorizationType(), action, verifyUser =
+        {actionType in user!!.role.allowedUpdate && userCheck(user, userId) })
+    }
 
     fun executeDelete(
             id: Int,
@@ -231,5 +236,5 @@ object AuthorizationService {
             token: AuthorizationToken,
             actionType: AuthorizationActionType.Delete,
             action: (AuthorizedUser) -> Message
-    ): Message = execute(userId, token, actionType.getAuthorizationType(), action) { user -> actionType in user.role.allowedDelete && userCheck(user, userId)}
+    ): Message = execute(userId, token, actionType.getAuthorizationType(), action) { user -> actionType in user.role.allowedDelete && userCheck(user, userId) }
 }

@@ -38,7 +38,7 @@ object ModelService : DatabaseService<ModelOutputPreview>() {
         transaction(getDatabase()) {
             id = models.insertAndGetId {
                 it[userId] = users.select { users.id eq data.userId }.first()[users.id]
-                it[public] = data.public
+                it[public] = data.pub
                 it[visibleRange] = data.visibleRange
                 it[longitude] = data.longitude
                 it[latitude] = data.latitude
@@ -309,7 +309,7 @@ object ModelService : DatabaseService<ModelOutputPreview>() {
                 return@executeGenericUser null
             }, identifier = id)
 
-    fun updateFiles(auth: AuthorizedAction<Int>, modelId: Int, preview: MultipartFile, model: MultipartFile, modelJson: MultipartFile): Message {
+    fun updateFiles(auth: AuthorizedAction<Int>, modelId: Int, preview: MultipartFile, modelJson: MultipartFile): Message {
         var m = storePreview(auth, preview, modelId)
         if (m.successful) {
                 m = storeJson(auth, modelJson, modelId)
@@ -460,7 +460,7 @@ object ModelService : DatabaseService<ModelOutputPreview>() {
             actionType = AuthorizationActionType.Update.MODEL
     ) {
         try {
-            if (!FileUtils.ensureFileFormat(file.originalFilename ?: "", arrayOf("json"))) {
+            if (!FileUtils.ensureFileFormat(file.originalFilename ?: "", arrayOf("json", "Json", "JSON"))) {
                 return@executeUpdateUser Message(
                         successful = false,
                         messageType = MessageType.EXCEPTION,

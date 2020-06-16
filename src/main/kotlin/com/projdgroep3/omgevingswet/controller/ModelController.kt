@@ -37,9 +37,8 @@ class ModelController {
                     @RequestParam userId: Int,
                     @RequestParam modelId: Int,
                     @RequestParam preview: MultipartFile,
-                    @RequestParam model: MultipartFile,
                     @RequestParam modelJson: MultipartFile): ResponseEntity<Message> {
-       return ModelService.updateFiles(AuthorizedAction(token, userId),modelId, preview, model, modelJson).toResponseEntity()
+       return ModelService.updateFiles(AuthorizedAction(token, userId),modelId, preview, modelJson).toResponseEntity()
     }
 
     @RequestMapping("/public/read", method = [RequestMethod.GET])
